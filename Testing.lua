@@ -2698,15 +2698,14 @@ function RayfieldLibrary:CreateWindow(Settings)
 			Dropdown.Title.Text = DropdownSettings.Name
 			Dropdown.Visible = true
 			Dropdown.Parent = TabPage
-
-      -- Create the Search Input Box
+			-- Create the Search Input Box
 local SearchInput = Instance.new("TextBox")
 SearchInput.Name = "SearchInput"
 SearchInput.PlaceholderText = "Search options..."
 SearchInput.Text = ""
 SearchInput.Size = UDim2.new(1, 0, 0, 30)
 SearchInput.Parent = Dropdown.List
-SearchInput.LayoutOrder = 1 -- Ensures it appears first in a UIListLayout
+SearchInput.LayoutOrder = 0 -- ***FIXED: Set to 0 to ensure it is at the very top.***
 
 -- Style the Search Input Box (reusing existing Rayfield theme variables)
 SearchInput.Font = Enum.Font.SourceSans
@@ -2715,7 +2714,9 @@ SearchInput.BackgroundColor3 = SelectedTheme.InputBackground
 SearchInput.TextColor3 = SelectedTheme.TextColor
 SearchInput.PlaceholderColor3 = SelectedTheme.PlaceholderColor
 SearchInput.ClearTextOnFocus = false
-SearchInput.ZIndex = 2 -- Ensures it is above the options
+SearchInput.ZIndex = 2 
+SearchInput.TextXAlignment = Enum.TextXAlignment.Left -- Ensure text starts on the left
+SearchInput.TextWrapped = true
 
 -- Add a UIStroke for styling
 local SearchInputStroke = Instance.new("UIStroke")
@@ -2723,14 +2724,28 @@ SearchInputStroke.Parent = SearchInput
 SearchInputStroke.Color = SelectedTheme.InputStroke
 SearchInputStroke.Thickness = 1
 
+
+-- ***FIX FOR DROPDOWN CLOSING ON CLICK***
+SearchInput.InputBegan:Connect(function(input)
+    -- Check if the input is a mouse click (MouseButton1) or touch
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        -- Capture focus on the textbox. This prevents the event from bubbling up 
+        -- to the parent frames which often triggers the Rayfield dropdown closure logic.
+        SearchInput:CaptureFocus() 
+    end
+end)
+
+
 -- Filtering Logic: Connect to the TextBox's Text property change
 SearchInput:GetPropertyChangedSignal("Text"):Connect(function()
     local searchText = string.lower(SearchInput.Text)
     -- Iterate through all children in the options list container
     for _, option in ipairs(Dropdown.List:GetChildren()) do
-        -- Only filter the option frames, not the search box itself or other elements
+        -- Only filter the option frames (assuming they are named after the option)
         if option:IsA("Frame") and option.Name ~= "SearchInput" and option.Name ~= "Placeholder" then
-            local optionName = string.lower(option.Name) -- Assuming the frame's Name is the option text
+            -- Find the text label inside the option frame for accurate name retrieval
+            local label = option:FindFirstChildOfClass("TextLabel") or option:FindFirstChild("Text") 
+            local optionName = string.lower(label and label.Text or option.Name) 
             
             -- Check if the option name contains the search text (case-insensitive, non-pattern match)
             if string.find(optionName, searchText, 1, true) then
