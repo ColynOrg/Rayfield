@@ -2470,6 +2470,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 
 			local Label = Elements.Template.Label:Clone()
 			Label.Title.Text = LabelText
+			Label.Title.RichText = true
 			Label.Visible = true
 			Label.Parent = TabPage
 
